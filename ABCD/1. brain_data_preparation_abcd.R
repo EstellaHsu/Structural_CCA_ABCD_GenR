@@ -10,7 +10,7 @@ library(stringr)
 ###########################
 # first, read the ids that passed the QC, this is from previous step 0.
 setwd("V:/medewerkers/***** Xu, B/PhD projects/Structural_CCA/abcd")
-qc <- readRDS("all_final_abcd.rds")
+qc <- readRDS("all_final_noNA_abcd.rds")
 dim(qc)
 
 ###########################
