@@ -1,6 +1,6 @@
-########### data preparation ##############
-###########################################
-
+############################################################
+########### brain strcutural data preparation ##############
+############################################################
 library(data.table)
 library(dplyr)
 library(stringr)
@@ -8,16 +8,20 @@ library(stringr)
 ###########################
 #structural data QC
 ###########################
-setwd("V:/medewerkers/051950 Xu, B/PhD projects/Structural_CCA/abcd")
-qc <- readRDS("all_final_abcd_tbv.rds")
+# first, read the ids that passed the QC, this is from previous step 0.
+setwd("V:/medewerkers/***** Xu, B/PhD projects/Structural_CCA/abcd")
+qc <- readRDS("all_final_abcd.rds")
 dim(qc)
 
 ###########################
-#structural data processing
+#structural data extraction
 ###########################
 
+# extract the cortical data
 cortical <- readRDS("abcd_freesurfer_20191219_aparc_stats.rds")
 cortical <- cortical[cortical$idc %in% qc$idc, ]
+
+# extract the subcortcial data
 subcortical <- readRDS("abcd_freesurfer_20191219_aseg_stats.rds")
 subcortical <- subcortical[subcortical$idc %in% qc$idc, ]
 names(cortical)
@@ -26,7 +30,7 @@ dim(cortical)
 dim(subcortical)
 identical(cortical$idc,subcortical$idc)
 
-# function of average left and right cortical regions
+# a function of averaging left and right cortical regions
 ave_lhrh <- function(measures) {
   cor <- cortical %>% select(contains(measures)) %>% as.data.frame
   names(cor) <- names(cor) %>% gsub(c("lh_|rh_|_abcd"),"",.)
@@ -51,9 +55,10 @@ cor_surfarea <- ave_lhrh("surfarea")
 
 ######## subcortical volumes
 
-# subcortical areas of interest
+# subcortical areas of interest: we selected 7 subcortical structures
 sub_area <- c("Hippocampus","Amygdala","Accumbens","Caudate","Thalamus","Putamen","Pallidum")
 
+# average the left and right hemisphere
 sub1 <- lapply(sub_area, function(x) rowMeans(subcortical[, str_detect(names(subcortical),x)]))# the region names
 sub2 <- do.call(cbind, sub1)
 colnames(sub2) <- paste0(sub_area, "_vol")
@@ -68,22 +73,8 @@ str(brain)
 dim(brain)
 
 df_all <- merge(qc, brain, by="idc")
+# check whether there are NAs
 colSums(is.na(df_all))
+# No NAs
 
-saveRDS(df_all,"all_final_abcd_tbv.rds")
-
-names(df_all)
-
-str(df_all)
-###########################
-#standardize the outcomes
-###########################
-df_all[23:131] <- lapply(df_all[23:131], scale)
-all_abcd_zscores <- df_all
-names(all_abcd_zscores)
-
-
-df_all[22:130] <- lapply(df_all[22:130], scale)
-all_abcd_zscores <- df_all
-saveRDS(all_abcd_zscores, "all_final_abcd_std_13.rds")
-
+saveRDS(df_all,"all_final_abcd.rds")
