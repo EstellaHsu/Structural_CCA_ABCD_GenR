@@ -133,13 +133,13 @@ all_cbcl1 <- all_cbcl %>% mutate_at(c("interview_age","cbcl_scr_syn_anxdep_r","c
 
 colSums(is.na(all_cbcl1))
 
-# there are many NAs in the final data in parental education, sex, interview age
-# so try to read the ABCC participants data
+# there are many NAs in the final data in parental education, sex, interview age: over 400
+# so I tried to read the ABCC participants data to find more demographic information (baseline at age 10)
 dd_rsmri <- read.table(file = 'participants.tsv', sep = '\t', header = TRUE)
 names(dd_rsmri)[1] <- "idc"
 # use the parental edu, sex, and age from this dataset. 
 rsmri <- dd_rsmri[, c("idc","sex","age","parental_education","site")]
-apply(rsmri,2,table)
+
                                   
                                   
 # fill the missingness
@@ -147,8 +147,8 @@ na_demo <- all_cbcl1[is.na(all_cbcl1$demo_prnt_ed_v2_l), ]
 dim(na_demo)
 na_fill <- merge(rsmri, na_demo[,!names(na_demo) %in% c("sex","interview_age","demo_prnt_ed_v2_l")], by=c("idc","site"))
 dim(na_fill)
-sum(duplicated(na_fill$idc))
 
+# replace the missingness 
 all_final0 <- all_cbcl1 %>% 
   mutate(demo_prnt_ed_v2_l=replace(demo_prnt_ed_v2_l, is.na(demo_prnt_ed_v2_l), na_fill$parental_education)) %>%
   mutate(interview_age=replace(interview_age, is.na(interview_age), na_fill$age)) %>%
@@ -165,10 +165,7 @@ all_final0[all_final0 == 888] <- NA
 all_final0[all_final0 == 999] <- NA
 all_final0[all_final0 == ""] <- NA
 
-
-apply(all_final0,2,table)
 colSums(is.na(all_final0))
-sum(duplicated(all_final0$idc))
 
 # remove data with NAS in relevant variables
 idx_noNA <- which(rowSums(is.na(all_final0[, !names(all_final0) %in% c("imgincl_t1w_include","mrif_score","rel_family_id")])) == 0)
@@ -181,15 +178,13 @@ str(all_final_noNA)
 
 all_final_noNA <- all_final_noNA %>% mutate_at(c("sex","site","race_ethnicity","parental_education"), as.factor)
 str(all_final_noNA)
-colSums(is.na(all_final_noNA))
 
 # adjust the level of parental education
 levels(all_final_noNA$parental_education) <- list("low" = 1:12,"medium" = 13:17,"high" = 18:21)
 str(all_final_noNA)
 dim(all_final_noNA)
 
-saveRDS(all_final_noNA,"all_final_noNA_update.rds")
-
+saveRDS(all_final_noNA,"all_final_noNA.rds")
 
 
 ########################################
@@ -213,17 +208,3 @@ saveRDS(all_final_test,"all_final_test.rds")
 
                          
                         
-
-
-
-
-
-
-
-
-
-
-
-
-
-
