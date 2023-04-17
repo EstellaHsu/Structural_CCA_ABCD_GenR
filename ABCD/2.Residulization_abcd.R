@@ -3,13 +3,13 @@
 ###########################################
 
 setwd("/home/r051950/structural_cca/abcd/")
-all_final <- readRDS("all_final_abcd_euler.rds")
+all_final <- readRDS("all_final_abcd.rds")
 
 residualization <- function(brain,confounders){
 
      resi_brain <- lapply(1:ncol(brain), function(i) {
         out <- residuals(lm(brain[, i] ~ confounders$interview_age + confounders$sex + 
-        confounders$race_ethnicity + confounders$site + confounders$parental_education + confounders$SurfaceHoles, na.action=na.exclude))
+        confounders$race_ethnicity + confounders$site + confounders$parental_education, na.action=na.exclude))
      })
      
      brain_residual <- do.call(cbind, resi_brain)
@@ -31,7 +31,7 @@ train_test_split <- lapply(1:10, function(i) {
     subid_test <- as.character(subid_test)
     
     ########### data extraction
-    brain_train <- all_final[all_final$idc %in% subid_train, 23:131] # syndrome: 21:129
+    brain_train <- all_final[all_final$idc %in% subid_train, 23:131] 
     brain_train <- apply(brain_train, 2, scale)
     brain_test <- all_final[all_final$idc %in% subid_test, 23:131]
     brain_test <- apply(brain_test, 2, scale)
@@ -62,4 +62,4 @@ train_test_split <- lapply(1:10, function(i) {
 
 })
 
-saveRDS(train_test_split, "train_test_split_euler.rds")
+saveRDS(train_test_split, "train_test_split_abcd.rds")
