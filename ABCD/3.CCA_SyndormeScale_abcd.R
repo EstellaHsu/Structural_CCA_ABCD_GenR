@@ -1,7 +1,7 @@
 ########################################################
 ####################### ABCD ##########################
 ########################################################
-# This is the total sample of generaiton R
+
 
 ########## load all the packages
 packages <- c('psych','doParallel','permute','reshape2','PMA','caret','corrplot','groupdata2',
@@ -9,7 +9,7 @@ packages <- c('psych','doParallel','permute','reshape2','PMA','caret','corrplot'
               'gridExtra','grid','ggplot2','lattice','tidyverse','hrbrthemes','viridis','forcats',
               'sjPlot','lme4','factoextra', 'fmsb', 'NbClust','stats','dendextend','cluster',
               'fpc', 'e1071', 'plotly', 'MASS', 'ggradar2','tidyr','introdatavizyes','Hmisc',
-              'pheatmap','RColorBrewer','circlize')
+              'pheatmap','RColorBrewer','circlize','CCA','CCP','candisc')
 
 
 lapply(packages, require, character.only = TRUE)
@@ -18,33 +18,21 @@ lapply(packages, require, character.only = TRUE)
 ########################################################
 ############## 1. Read the data ########################
 ########################################################
-setwd("/Users/estella/Desktop/Structural_cca/")
-### read the data: because I did different imputation based on syndrome scale and item level, I have different residual matrix
 all_abcd <- readRDS("train_test_split.rds")
-dim(all_abcd[[1]]$brain_train)
-colnames(all_abcd[[1]]$brain_test)
+
 ########################################################
 ############## 2. split in training and test ###########
 ########################################################
-### read the data: because I did different imputation based on syndrome scale and item level, I have different residual matrix
+### read the training data and test data
 
 str_train <- lapply(1:10, function(i) {temp <- all_abcd[[i]]
                                       list(brain_train=temp$brain_train,
-                                           cbcl_train=temp$cbcl_train)}) # no thickness
+                                           cbcl_train=temp$cbcl_train)}) 
 
 str_test <- lapply(1:10, function(i) {temp <- all_abcd[[i]]
                                       list(brain_test=temp$brain_test,
                                            cbcl_test=temp$cbcl_test)})
 
-zerovar_test <- unique(unlist(lapply(str_test, function(x) {
-                a <- apply(x$cbcl_test, 2, var)
-                names(a)[which(a == 0)]})))
-zerovar_train <- unique(unlist(lapply(str_train, function(x) {
-  a <- apply(x$cbcl_train, 2, var)
-  names(a)[which(a == 0)]})))
-
-grid <- readRDS("grid.abcd.rds")
-#[, !names(temp$cbcl_train) %in% zerovar_test]
 ########################################################
 ############## 3. Grid search for penalty parameters  ##
 ########################################################
@@ -63,15 +51,11 @@ grid.abcd.str.all <- lapply(1:10, function(i) {
   })
 
 saveRDS(grid.abcd.str.all,"grid.abcd.str.all.rds")
-grid.abcd <- readRDS("grid.abcd.rds")
 
 
-########################################################
-############## 4. Fit the sCCA model  ##################
-########################################################
-cbcl_pen <- c(0.6,0.7,0.6,0.6,0.7,0.7,0.7,0.6,0.7,0.7)
-brain_pen <- c(0.7,0.5,0.7,0.7,0.4,0.6,0.5,0.6,0.6,0.3)
-
+###################################################################################################
+############## 4. Fit the sCCA model  across ABCD training, test and Genertion R ##################
+###################################################################################################
 
 str_train_test_abcd <- lapply(1:10, function(i) {
   
@@ -79,8 +63,8 @@ str_train_test_abcd <- lapply(1:10, function(i) {
   cbcl_train <- str_train[[i]]$cbcl_train
   brain_test <- str_test[[i]]$brain_test
   cbcl_test <- str_test[[i]]$cbcl_test
-  brain_pen <- brain_pen[i]
-  cbcl_pen <- cbcl_pen[i]
+  brain_pen <- grid.abcd.str.all[[i]][[1]][1]
+  cbcl_pen <- grid.abcd.str.all[[i]][[1]][2]
   
   res.abcd <- CCA(x=brain_train, z=cbcl_train, penaltyx = brain_pen, penaltyz = cbcl_pen, 
                   typex="standard", typez="standard",niter = 20, K=8)
@@ -102,35 +86,37 @@ str_train_test_abcd <- lapply(1:10, function(i) {
 saveRDS(str_train_test_abcd,"str_train_test_abcd_31.01.2023.rds")
 
 
-brain_train <- str_train[[8]]$brain_train
-cbcl_train <- str_train[[8]]$cbcl_train
-brain_test <- str_test[[8]]$brain_test
-cbcl_test <- str_test[[8]]$cbcl_test
-
-dim(brain_train)
-
-
 #################################################
 ############## traditional CCA ##################
 #################################################
 
-library(CCA)
-library(CCP)
-library(candisc)
+## I just did the traditional CCA in the first train-test split (it can be done in any split)
 
+
+brain_train <- str_train[[1]]$brain_train
+cbcl_train <- str_train[[1]]$cbcl_train
+brain_test <- str_test[[1]]$brain_test
+cbcl_test <- str_test[[1]]$cbcl_test
+
+## the traditional CCA model
 abcd_train_cca <- candisc::cancor(brain_train, cbcl_train)
 
 
+## calculate the canonical correlations in the test set of ABCD
 std_brain <- scale(brain_test) %*% abcd_train_cca$coef$X
 std_cbcl <- scale(cbcl_test) %*% abcd_train_cca$coef$Y
 
-cor.res <- diag(cor(std_brain, std_cbcl))
+cor.res.test.abcd <- diag(cor(std_brain, std_cbcl))
 
-# test the significance
-n.perm = 999
+## test the significance using permutation tests
+# number of permutations
+n.perm = 1999
+
+# shffule the row the behavioral data and build a new list of cbcl data 
 shuffle_idx <- sapply(1:n.perm, function (x){permute::shuffle(1:nrow(cbcl_test))})
 cbcl_perm <- lapply(1:n.perm, function(i) {cbcl_test[shuffle_idx[, i], ]})
 
+# build the null distribution of the canonical correlations
 cl <- makePSOCKcluster(8)
 registerDoParallel(cl)
 perm_cor <- foreach::foreach(i = seq_along(cbcl_perm)) %dopar% {
@@ -141,97 +127,22 @@ perm_cor <- foreach::foreach(i = seq_along(cbcl_perm)) %dopar% {
 stopCluster(cl)
 
 cor.perm <- do.call(rbind, perm_cor)
-pval.perm <- sapply(1:6, function(x){length(which(abs(cor.perm[, x]) >= abs(cor.res [x])))/(n.perm+1)})
+# calculate the p values 
+pval.perm <- sapply(1:6, function(x){length(which(abs(cor.perm[, x]) >= abs(cor.res.test.abcd[x])))/(n.perm+1)})
 
 
-# generation R
+## test the correlations in generation R
 std_brain <- scale(brain_genr_str) %*% abcd_train_cca$coef$X
 std_cbcl <- scale(cbcl_genr_str) %*% abcd_train_cca$coef$Y
-cor.res <- diag(cor(std_brain, std_cbcl))
-cor.res
+cor.res.genr <- diag(cor(std_brain, std_cbcl))
 
 
-brain_loading <- abcd_train_cca$coef$X
-cbcl_loading <- abcd_train_cca$coef$Y
-
-rownames(cbcl_loading)  <- c("anxious","withdrawn","somatic","social","thought","attention","rule_breaking","aggression")
-
-corrplot(t(cbcl_loading)[1:2,], method="color", 
-         addCoef.col = "black", tl.srt =45, 
-         tl.col = "black", tl.cex = 2, number.cex=1)
-
-brain_loading <- brain_loading[, 1:3]
-quantile(brain_loading)
-
-brain_loading[brain_loading < 0.2556 & brain_loading > -0.25438] <- 0
-
-
-
-
-
-
-
-########################################################
-############## 4. Fit the sCCA model  ##################
-########################################################
-cbcl_pen <- c(0.6,0.7,0.6,0.6,0.7,0.7,0.7,0.6,0.7,0.7)
-brain_pen <- c(0.7,0.5,0.7,0.7,0.4,0.6,0.5,0.6,0.6,0.3)
-
-
-res.abcd <- CCA(x=brain_train, z=cbcl_train, penaltyx = 0.6, penaltyz = 0.6, typex="standard", typez="standard",
-                niter = 20, K=8)
-res.abcd$v
-# visualize the loadings:
-cbcl_loading <- res.abcd$u
-#rownames(cbcl_loading) <- items_name
-#cbcl_loading[abs(cbcl_loading) < 0.2] <- 0
-#cbcl_loading <- cbcl_loading[rowSums(cbcl_loading[,1:3]) != 0,]
-rownames(cbcl_loading)  <- c("anxious","withdrawn","somatic","social","thought","attention","rule_breaking","aggression")
-
-corrplot(t(abs(cbcl_loading))[1:8,], method="color", 
-         addCoef.col = "black", tl.srt =45, 
-         tl.col = "black", tl.cex = 2, number.cex=1)
-
-rownames(res.abcd$v) <- colnames(str_train[[2]]$brain_train)
-
-########################################################
-############## 5. Covariance explained  ###################
-########################################################
-vardf <- VarianceExplain(brain_train, cbcl_train, res.abcd, 8) 
-colnames(vardf) <- c("principal_components", "Covariance_explained")
-ggplot(vardf, aes(x=principal_components, y=Covariance_explained))+
-  geom_point(size = 3) + theme_bw()
-
-########################################################
-############## 6. permutation test  #######################
-########################################################
-perm_abcd_train1 <- permutation_test(cbcl_train, brain_train, 
-                                    nperm=999, 0.7, 0.3, 8, res.abcd1$cors)
-
-########################################################
-############## train-test splits  ######################
-########################################################
-abcd.test2 <- test_project_weights(brain_test,cbcl_test,res.abcd, 6)
-abcd.test2
-perm_abcd_test <- permutation_test_testset(cbcl_test,brain_test,nperm=999,res.abcd3,abcd.test2)
-
-
-########################################################
-############## generation R  ###########################
-########################################################
-#saveRDS(test.pca.genr.total, "test.pca.genr.total.rds")
-# direct mapping
-cor.abcdTogenr <- test_project_weights(brain_genr_str, cbcl_genr_str, res.abcd, 6)
-cor.abcdTogenr
-
-perm_abcdTogenr_total <- permutation_test_testset(cbcl_genr_str,brain_genr_str,nperm=999, 
-                                                  res.abcd,abs(cor.abcdTogenr))
 
 
 ########################################################
 ############## reorder and average across splits  ######
 ########################################################
-setwd("/Users/estella/Desktop/Structural_cca/")
+
 str_train_test_abcd <- readRDS("str_train_test_abcd.rds")
 brain_mean <- readRDS("brain_mean.rds")
 cbcl_mean <- readRDS("cbcl_mean.rds")
