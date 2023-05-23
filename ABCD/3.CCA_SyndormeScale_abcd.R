@@ -71,10 +71,10 @@ str_train_test_abcd <- lapply(1:10, function(i) {
   perm_abcd_train <- permutation_test(cbcl_train, brain_train, nperm=999, cbcl_pen, brain_pen, 8, res.abcd$cors)
   
   abcd.test <- test_project_weights(brain_test,cbcl_test,res.abcd, 8)
-  perm_abcd_test <- permutation_test_testset(cbcl_test,brain_test,nperm=999,res.abcd,abcd.test)
+  perm_abcd_test <- permutation_test_testset(cbcl_test,brain_test,nperm=1999,res.abcd,abcd.test)
 
   cor.abcdTogenr <- test_project_weights(brain_genr_str, cbcl_genr_str, res.abcd,8)
-  perm_abcdTogenr_total <- permutation_test_testset(cbcl_genr_str,brain_genr_str,nperm=999, 
+  perm_abcdTogenr_total <- permutation_test_testset(cbcl_genr_str,brain_genr_str,nperm=1999, 
                                                     res.abcd,abs(cor.abcdTogenr))
   
   return(list(abcd.train=res.abcd,abcd.train.perm=perm_abcd_train$pval.perm,
