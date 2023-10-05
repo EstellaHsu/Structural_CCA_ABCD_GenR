@@ -2,8 +2,9 @@
 ########### data residulization ###########
 ###########################################
 
-setwd("/home/r051950/structural_cca/abcd/")
+setwd("PATH TO YOUR DATA")
 all_final <- readRDS("all_final_abcd.rds")
+
 
 residualization <- function(brain,confounders){
 
@@ -17,11 +18,11 @@ residualization <- function(brain,confounders){
 }
     
 ############### read the data
-train <- readRDS("all_final_train_tbv.rds")
-test <- readRDS("all_final_test_tbv.rds") 
+train <- readRDS("all_final_train.rds")
+test <- readRDS("all_final_test.rds") 
 
 train_test_split <- lapply(1:10, function(i) {
-
+    ########### extract the ids
     train0 <- train[[i]]
     subid_train <- train0$idc
     subid_train <- as.character(subid_train)
@@ -30,15 +31,12 @@ train_test_split <- lapply(1:10, function(i) {
     subid_test <- test0$idc
     subid_test <- as.character(subid_test)
     
-    ########### data extraction
-    brain_train <- all_final[all_final$idc %in% subid_train, 23:131] 
-    brain_train <- apply(brain_train, 2, scale)
+    ########### all data extraction
+    brain_train <- all_final[all_final$idc %in% subid_train, 23:131] # index to all the brain measures
+    brain_train <- apply(brain_train, 2, scale) # normalization
     brain_test <- all_final[all_final$idc %in% subid_test, 23:131]
     brain_test <- apply(brain_test, 2, scale)
-    
-    #cbcl_train <- train0[,10:128]
-    #cbcl_test <- test0[,10:128]
-    
+
     cbcl_train <- train0[, c("cbcl_scr_syn_anxdep_r","cbcl_scr_syn_withdep_r","cbcl_scr_syn_somatic_r",
                           "cbcl_scr_syn_social_r", "cbcl_scr_syn_thought_r","cbcl_scr_syn_attention_r",
                           "cbcl_scr_syn_rulebreak_r","cbcl_scr_syn_aggressive_r")]
@@ -46,11 +44,8 @@ train_test_split <- lapply(1:10, function(i) {
                           "cbcl_scr_syn_social_r", "cbcl_scr_syn_thought_r","cbcl_scr_syn_attention_r",
                           "cbcl_scr_syn_rulebreak_r","cbcl_scr_syn_aggressive_r")]
                            
-    #confounders_train <- train0[,c("interview_age","sex","race_ethnicity","site","parental_education","SurfaceHoles")]
-    #confounders_test <- test0[,c("interview_age","sex","race_ethnicity","site","parental_education","SurfaceHoles")]
-    
-    confounders_train <- all_final[all_final$idc %in% subid_train,c("interview_age","sex","race_ethnicity","site","parental_education","SurfaceHoles")]
-    confounders_test <- all_final[all_final$idc %in% subid_test,c("interview_age","sex","race_ethnicity","site","parental_education","SurfaceHoles")]
+    confounders_train <- all_final[all_final$idc %in% subid_train,c("interview_age","sex","race_ethnicity","site","parental_education")]
+    confounders_test <- all_final[all_final$idc %in% subid_test,c("interview_age","sex","race_ethnicity","site","parental_education")]
     
     ############ residualization
     brain_train_residual <- residualization(brain_train, confounders_train)
