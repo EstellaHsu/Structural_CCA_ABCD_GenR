@@ -18,7 +18,7 @@ lapply(packages, require, character.only = TRUE)
 ########################################################
 ############## 1. Read the data ########################
 ########################################################
-all_abcd <- readRDS("train_test_split.rds")
+all_abcd <- readRDS("train_test_split.rds") # this is the data from previous step: Residualization_abcd.R
 
 ########################################################
 ############## 2. split in training and test ###########
@@ -83,7 +83,7 @@ str_train_test_abcd <- lapply(1:10, function(i) {
 })
 
 
-saveRDS(str_train_test_abcd,"str_train_test_abcd_31.01.2023.rds")
+saveRDS(str_train_test_abcd,"str_train_test_abcd_genr.rds")
 
 
 #################################################
