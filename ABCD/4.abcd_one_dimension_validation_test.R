@@ -100,8 +100,6 @@ zerovar_train <- unique(unlist(lapply(str_train_item, function(x) {
   names(a)[which(a == 0)]})))
 
 ##### The items have 0 variance in all ABCD test sets are overlapped with ABCD training sets
-##### The items are: 
-
 
 
 ##### Extract the data we need 
@@ -131,6 +129,7 @@ grid.abcd.str.item <- lapply(1:10, function(i) {
                                        cv.resample$brain_test, cv.resample$cbcl_test,
                                        x_pen, y_pen, nsample=100)
 })
+
 
 
 ###### Fit the model in ABCD and Generation R
