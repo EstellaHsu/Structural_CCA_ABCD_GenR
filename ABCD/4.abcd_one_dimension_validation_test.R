@@ -249,8 +249,8 @@ colnames(brain_fig) <- paste0("CV",1:3)
 
 # create a figure data frame of surface areas
 fig_surf <- brain_fig[35:68, ] # index of surface areas
-quantile(fig_surf) # choose the top 25% loading
-fig_surf[fig_surf < 0.1425] <- 0
+q_25 <- quantile(fig_surf) # choose the top 25% loading
+fig_surf[fig_surf < q_25] <- 0
 surf <- gsub("_surfarea","",rownames(fig_surf))
 # some of the names are not correct
 surf <- c("bankssts","caudal anterior cingulate", "caudal middle frontal","cuneus","entorhinal","fusiform",
@@ -277,8 +277,8 @@ ggsave("CV1_surfarea_item.pdf",width=10,height=4)
 ###########################################
 # create a figure data frame of subcortical volumes
 fig_sub <- brain_fig[69:75, ] # index of subcortical volumes
-quantile(fig_sub) # choose the top 25% loading
-fig_sub[fig_sub < 0.064] <- 0
+q_25 <- quantile(fig_sub) # choose the top 25% loading
+fig_sub[fig_sub < q_25] <- 0
 
 
 ####### Below is an example of creating the figure for CV1
