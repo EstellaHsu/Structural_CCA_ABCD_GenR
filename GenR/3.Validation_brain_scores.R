@@ -14,7 +14,7 @@ names(cito)[1] <- "IDC"
 cito1 <- cito[,c("IDC","F0200293_cleaned","F0200293_cleaned_CITOscore")]
 
 # extract CV scores
-CV_scores <- scale(genr_brain_str) %*% brain_mean # brain_mean is the averaged canonical loadings from 10 train-test splits in ABCD
+CV_scores <- scale(brain_residual) %*% brain_mean # brain_mean is the averaged canonical loadings from 10 train-test splits in ABCD
 CV_scores <- as.data.frame(CV_scores)
 names(CV_scores) <- c(paste0("CV",1:3),"IDC")
 
