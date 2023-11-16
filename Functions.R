@@ -9,7 +9,7 @@
 # this is for ABCD
 make_brain_features <- function(subid){
     
-    conMatDir <- ('/gpfs/work2/0/einf1049/scratch/bxu/ABCD_data_filtered/')
+    conMatDir <- ('PATH TO YOUR DATA')
     cl <- makePSOCKcluster(32)
     registerDoParallel(cl)
     
