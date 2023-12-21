@@ -3,34 +3,6 @@
 #######################################################################
 
 
-######################################################
-####### Read the rs-fMRI matrices and vectorize ######
-######################################################
-# this is for ABCD
-make_brain_features <- function(subid){
-    
-    conMatDir <- ('PATH TO YOUR DATA')
-    cl <- makePSOCKcluster(32)
-    registerDoParallel(cl)
-    
-    feature_list <- foreach::foreach(i = 1:length(subid), .packages=c("doParallel", "foreach")) %dopar% {
-        subID <- subid[i]
-        conMatCsv <- file.path(conMatDir, paste(subID, 'corMat_Gordon_fsSC_filtered', sep='_'))
-        conMatCsv <- paste(conMatCsv, 'csv', sep='.')
-        conMat <- as.matrix(read.table(conMatCsv))
-        feature_column <- conMat[upper.tri(conMat, diag = FALSE)]
-    }
-    
-    stopCluster(cl)
-    
-    feature_abcd <- do.call(rbind,feature_list)
-    feature_abcd <- as.data.frame(feature_abcd)
-    colnames(feature_abcd) <- paste0("F_", 1:ncol(feature_abcd))
-    
-    return(feature_abcd)
-}
-
-
 #############################
 ####### Residualizaiton #####
 #############################
@@ -51,28 +23,6 @@ residualization <- function(brain,confounders){
     return(brain_residual)
 }
 
-
-###########################
-####### weighted PCA ######
-###########################
-
-
-weighted_pca <- function(cbcl,brain,n) {
-  rank <- rank(-rowSums(cbcl))
-  weights <- log(nrow(cbcl)) - log(rank)
-  weights <- weights / sum(weights)
-  # center the original data
-  feature_brain_centered <- scale(brain, scale = FALSE)
-  # scale the columns of the feature matrix
-  feature_centered_weighted <- feature_brain_centered * replicate(ncol(feature_brain_centered), weights)
-  # call PCA on the weighted feature matrix
-  pca.weighted <- prcomp(feature_centered_weighted)
-  # the rotation transformation: take the first 100 eigenvectors
-  rotation <- pca.weighted$rotation[,1:n]
-  # the data with the reduced dimensionality
-  feature_brain_reduced <- feature_brain_centered %*% rotation 
-  return(brain_train_reduced=feature_brain_reduced, rotation = pca.weighted$rotation)
-}
 
 
 ########################################
